@@ -6,7 +6,11 @@
 typedef int Elemt;
 
 enum error {
-
+    NULLSTRSTK = 1,
+    SIZELESSZERO = 2,
+    CAPACITYLESSZERO = 3,
+    CAPACITYLESSSIZE = 4,
+    CAPACITYEQUALZERO = 5
 };
 struct Steck {
     size_t Size;
