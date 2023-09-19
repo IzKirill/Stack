@@ -14,7 +14,7 @@ struct Steck {
     size_t Capacity;
 };
 
-int StackCtor(Steck* stk);
+int StackCtor(Steck* stk, const size_t Capacity);
 int StackDtor(Steck* stk);
 int StackPop(Steck* stk, Elemt* refValue);
 int StackPush(Steck* stk, Elemt value);
