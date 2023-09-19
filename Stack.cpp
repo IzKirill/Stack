@@ -18,6 +18,28 @@ int StackCtor(Steck* stk, const size_t Capacity)
     return 0;
 }
 
+int StackDtor(Steck* stk)
+{
+    if(StackOK(stk))
+        STACK_DUMP(stk);
+
+    for (size_t i = 0; i < stk->Capacity; i++)
+    {
+        stk->data[i] = 0;
+    }
+
+    stk->Size = 0;
+    stk->Capacity = 0;
+
+
+    free(stk->data);
+    stk->data = 0;
+
+    stk = 0;
+
+    return 0;
+}
+
 int StackOK(Steck* stk)
 {
     if (stk == NULL) return 1;
