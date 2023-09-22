@@ -27,12 +27,12 @@ struct Steck {
     size_t Capacity;
 };
 
-int StackCtor(Steck* stk, const size_t Capacity);
-int StackDtor(Steck* stk);
-int StackPop(Steck* stk, Elemt* refValue);
-int StackPush(Steck* stk, Elemt value);
-int StackOK(const Steck* stk);
-int StackDump(Steck* stk, const size_t nline, const char* namefile, const char* func);
+error StackCtor(Steck* stk, const size_t Capacity);
+error StackDtor(Steck* stk);
+error StackPop(Steck* stk, Elemt* refValue);
+error StackPush(Steck* stk, Elemt value);
+error StackOK(const Steck* stk);
+error StackDump(Steck* stk, const size_t nline, const char* namefile, const char* func);
 
 
 #endif

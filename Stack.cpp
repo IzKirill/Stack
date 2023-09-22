@@ -4,7 +4,7 @@
 #include <malloc.h>
 #include "Stack.h"
 
-int StackCtor(Steck* stk, const size_t Capacity)
+error StackCtor (Steck* stk, const size_t Capacity)
 {
     stk->Size = 0;
     stk->Capacity = Capacity;
@@ -16,7 +16,7 @@ int StackCtor(Steck* stk, const size_t Capacity)
     return OK;
 }
 
-int StackPush(Steck* stk, Elemt value)
+error StackPush (Steck* stk, Elemt value)
 {
     if(StackOK(stk) == ERROR)
         return STACK_DUMP(stk);
@@ -25,7 +25,7 @@ int StackPush(Steck* stk, Elemt value)
     {
         stk->Capacity *= 2;
         stk->data = (Elemt*) realloc(stk->data, stk->Capacity*sizeof(Elemt));
-        for (int i = stk->Size; i < stk->Capacity; i++)
+        for (size_t i = stk->Size; i < stk->Capacity; i++)
             stk->data[i] = 0;
     }
 
@@ -37,10 +37,16 @@ int StackPush(Steck* stk, Elemt value)
     return OK;
 }
 
-int StackPop(Steck* stk, Elemt* refValue)
+error StackPop (Steck* stk, Elemt* refValue)
 {
     if(StackOK(stk) == ERROR)
         return STACK_DUMP(stk);
+
+    if (stk->Size == 0)
+    {
+        printf("ERROR: stk->Size == 0\n");
+        return STACK_DUMP(stk);
+    }
 
     if (2*stk->Size <= stk->Capacity)
     {
@@ -53,9 +59,11 @@ int StackPop(Steck* stk, Elemt* refValue)
 
     if(StackOK(stk))
         return STACK_DUMP(stk);
+
+    return OK;
 }
 
-int StackDtor(Steck* stk)
+error StackDtor (Steck* stk)
 {
     if(StackOK(stk) == ERROR)
         return STACK_DUMP(stk);
@@ -77,7 +85,7 @@ int StackDtor(Steck* stk)
     return OK;
 }
 
-int StackOK(const Steck* stk)
+error StackOK (const Steck* stk)
 {
     size_t n_error = 0;
 
@@ -97,17 +105,23 @@ int StackOK(const Steck* stk)
     return OK;
 }
 
-int StackDump(Steck* stk, const size_t nline, const char* namefile, const char* func)
+error StackDump (Steck* stk, const size_t nline, const char* namefile, const char* func)
 {
-    printf("Stack[%p] called from %s(%zd) %s\n", stk, namefile, nline, func);
-    printf("  {\n   Size = %zd\n   Capacity = %zd\n   data[%p]\n"
-    "\t{\n\t", stk->Size, stk->Capacity, stk->data);
+    printf("Stack[%p] called from %s(%d) %s\n", stk, namefile, nline, func);
+    printf("  {\n   Size = %d\n   Capacity = %d\n   data[%p]\n"
+    "\t{\n\t", stk->Size, stk->Capacity, (void*) stk->data);
 
-    for (int i = 0; i < stk->Size; i++)
-        printf("*[%d]=%d\n\t", i, stk->data[i]);
+    if (stk->Size > 0)
+    {
+        for (size_t i = 0; i < stk->Size; i++)
+            printf("*[%d]=%d\n\t", i, stk->data[i]);
 
-    for (int j = stk->Size; j < stk->Capacity; j++)
-        printf(" [%d]=%d\n\t", j, stk->data[j]);
+        if (stk->Capacity > 0)
+        {
+            for (size_t j = stk->Size; j < stk->Capacity; j++)
+                printf(" [%d]=%d\n\t", j, stk->data[j]);
+        }
+    }
 
     printf("}\n  }\n");
 
