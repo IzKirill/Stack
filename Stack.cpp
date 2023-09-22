@@ -6,23 +6,20 @@
 
 int StackCtor(Steck* stk, const size_t Capacity)
 {
-    if(StackOK(stk))
-        STACK_DUMP(stk);
-
     stk->Size = 0;
     stk->Capacity = Capacity;
     stk->data = (Elemt*) calloc(Capacity, sizeof(Elemt));
 
     if(StackOK(stk))
-        STACK_DUMP(stk);
+        return STACK_DUMP(stk);
 
-    return 0;
+    return OK;
 }
 
 int StackPush(Steck* stk, Elemt value)
 {
-    if(StackOK(stk))
-        STACK_DUMP(stk);
+    if(StackOK(stk) == ERROR)
+        return STACK_DUMP(stk);
 
     if (stk->Size == stk->Capacity)
     {
@@ -34,16 +31,16 @@ int StackPush(Steck* stk, Elemt value)
 
     stk->data[stk->Size++] = value;
 
-    if(StackOK(stk))
-        STACK_DUMP(stk);
+    if(StackOK(stk) == ERROR)
+        return STACK_DUMP(stk);
 
-    return 0;
+    return OK;
 }
 
 int StackPop(Steck* stk, Elemt* refValue)
 {
-    if(StackOK(stk))
-        STACK_DUMP(stk);
+    if(StackOK(stk) == ERROR)
+        return STACK_DUMP(stk);
 
     if (2*stk->Size <= stk->Capacity)
     {
@@ -55,13 +52,13 @@ int StackPop(Steck* stk, Elemt* refValue)
     stk->data[stk->Size] = 0;
 
     if(StackOK(stk))
-        STACK_DUMP(stk);
+        return STACK_DUMP(stk);
 }
 
 int StackDtor(Steck* stk)
 {
-    if(StackOK(stk))
-        STACK_DUMP(stk);
+    if(StackOK(stk) == ERROR)
+        return STACK_DUMP(stk);
 
     for (size_t i = 0; i < stk->Capacity; i++)
     {
@@ -77,18 +74,27 @@ int StackDtor(Steck* stk)
 
     stk = 0;
 
-    return 0;
+    return OK;
 }
 
-int StackOK(Steck* stk)
+int StackOK(const Steck* stk)
 {
-    if (stk == nullptr) return 1;
-    if (stk->Size < 0) return 2;
-    if (stk->Capacity < 0) return 3;
-    if (stk->Capacity < stk->Size) return 4;
-    for (int i = 0; i < stk->Size; i++)
-        if (stk->data[i] == NAN || stk->data[i] == 0) return 5;
-    return 0;
+    size_t n_error = 0;
+
+    checkerror(stk == nullptr);
+    checkerror(stk->Size < 0);
+    checkerror(stk->Capacity < 0);
+    checkerror(stk->Capacity < stk->Size);
+    checkerror(stk-> Capacity == 0);
+    checkerror(stk->data == NULL);
+
+    if (n_error != 0)
+    {
+        printf("Total errors - %d\n", n_error);
+        return ERROR;
+    }
+
+    return OK;
 }
 
 int StackDump(Steck* stk, const size_t nline, const char* namefile, const char* func)
@@ -104,5 +110,6 @@ int StackDump(Steck* stk, const size_t nline, const char* namefile, const char* 
         printf(" [%d]=%d\n\t", j, stk->data[j]);
 
     printf("}\n  }\n");
-    return 0;
+
+    return ERROR;
 }
