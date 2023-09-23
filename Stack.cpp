@@ -4,11 +4,28 @@
 #include <malloc.h>
 #include "Stack.h"
 
-error StackCtor (Steck* stk, const size_t Capacity)
+error StackCtor(Stack* stk, const size_t Capacity, const char* name,
+                const size_t birth_line, const char* birth_file, const char* birth_function)
 {
+    stk->stk_name = name;
+    stk->birth_function = birth_function;
+    stk->birth_line = birth_line;
+    stk->birth_file = birth_file;
+
+    if (Capacity <= 0)
+    {
+        printf("Incorrect value of Capacity.\n");
+        return INCORRECTCAPACITY;
+    }
     stk->Size = 0;
     stk->Capacity = Capacity;
     stk->data = (Elemt*) calloc(Capacity, sizeof(Elemt));
+
+    if (!stk->data)
+    {
+        printf("Allocation failure.\n");
+        return NODINMEMORY;
+    }
 
     if(StackOK(stk))
         return STACK_DUMP(stk);
@@ -16,7 +33,7 @@ error StackCtor (Steck* stk, const size_t Capacity)
     return OK;
 }
 
-error StackPush (Steck* stk, Elemt value)
+error StackPush (Stack* stk, Elemt value)
 {
     if(StackOK(stk) == ERROR)
         return STACK_DUMP(stk);
@@ -25,6 +42,13 @@ error StackPush (Steck* stk, Elemt value)
     {
         stk->Capacity *= 2;
         stk->data = (Elemt*) realloc(stk->data, stk->Capacity*sizeof(Elemt));
+
+        if (!stk->data)
+        {
+            printf("Allocation failure.\n");
+            return NODINMEMORY;
+        }
+
         for (size_t i = stk->Size; i < stk->Capacity; i++)
             stk->data[i] = 0;
     }
@@ -37,7 +61,7 @@ error StackPush (Steck* stk, Elemt value)
     return OK;
 }
 
-error StackPop (Steck* stk, Elemt* refValue)
+error StackPop (Stack* stk, Elemt* refValue)
 {
     if(StackOK(stk) == ERROR)
         return STACK_DUMP(stk);
@@ -51,7 +75,6 @@ error StackPop (Steck* stk, Elemt* refValue)
     if (2*stk->Size <= stk->Capacity)
     {
         stk->Capacity /= 2;
-        free(stk->data+stk->Capacity);
     }
 
     *refValue = stk->data[--stk->Size];
@@ -63,7 +86,7 @@ error StackPop (Steck* stk, Elemt* refValue)
     return OK;
 }
 
-error StackDtor (Steck* stk)
+error StackDtor (Stack* stk)  // double free>?
 {
     if(StackOK(stk) == ERROR)
         return STACK_DUMP(stk);
@@ -85,16 +108,16 @@ error StackDtor (Steck* stk)
     return OK;
 }
 
-error StackOK (const Steck* stk)
+error StackOK (const Stack* stk)
 {
     size_t n_error = 0;
 
-    checkerror(stk == nullptr);
-    checkerror(stk->Size < 0);
-    checkerror(stk->Capacity < 0);
-    checkerror(stk->Capacity < stk->Size);
-    checkerror(stk-> Capacity == 0);
-    checkerror(stk->data == NULL);
+    CHECKERROR(stk == nullptr);
+    CHECKERROR(stk->Size < 0);
+    CHECKERROR(stk->Capacity < 0);
+    CHECKERROR(stk->Capacity < stk->Size);
+    CHECKERROR(stk-> Capacity == 0);
+    CHECKERROR(stk->data == NULL); // change of content?
 
     if (n_error != 0)
     {
@@ -105,9 +128,12 @@ error StackOK (const Steck* stk)
     return OK;
 }
 
-error StackDump (Steck* stk, const size_t nline, const char* namefile, const char* func)
-{
-    printf("Stack[%p] called from %s(%d) %s\n", stk, namefile, nline, func);
+error StackDump (Stack* stk, const size_t nline, const char* namefile, const char* func)
+{   // -> to file
+    // 100 % garanty
+    printf("Stack[%p] %s from %s(%d) %s", stk, stk->stk_name, stk->birth_file,
+                                          stk->birth_line, stk->birth_function);
+    printf(" called from %s(%d) %s\n", namefile, nline, func);
     printf("  {\n   Size = %d\n   Capacity = %d\n   data[%p]\n"
     "\t{\n\t", stk->Size, stk->Capacity, (void*) stk->data);
 
