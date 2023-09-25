@@ -3,12 +3,12 @@
 
 
 #ifndef RELEASE
-    #define STACK_DUMP(stk) STACK_DUMP(stk)
+    #define STACK_DUMP(stk) StackDump((stk), __LINE__,__FILE__,__PRETTY_FUNCTION__ )
 #else
-    STACK_DUMP(stk) ERROR
+    #define STACK_DUMP(stk) ERROR
+    #define CheckCanary(stk) 0
+    #define AddCanary(stk)
 #endif
-
-#define STACK_DUMP(stk) StackDump((stk), __LINE__,__FILE__,__PRETTY_FUNCTION__ )
 
 #define STACK_CTOR(stk, capacity) StackCtor((stk), (capacity), #stk, \
                                   __LINE__,__FILE__,__PRETTY_FUNCTION__)
@@ -16,8 +16,11 @@
 #define STACKOK(stk) StackOK((stk), __LINE__,__FILE__,__PRETTY_FUNCTION__)
 
 
-const unsigned long long right_canary = 0xB0BABABE;
-const unsigned long long left_canary  = 0xDEADFEED;
+typedef unsigned long long CanaryType;
+typedef unsigned long long HashType;
+
+const CanaryType right_canary = 0xB0BABABE;
+const CanaryType left_canary  = 0xDEADFEED;
 
 typedef int Elemt;
 
@@ -31,13 +34,19 @@ enum error {
     NODINMEMORY = 6,
     ADRESSNULL = 8,
     SIZEEQUALZERO = 9,
+    CANARYDESTROY = 10,
+    STACKNOTCTOR = 11,
+    STACKDTOR = 12,
+    ATTACKCANARY = 13,
     ERROR = -1,
     OK = 0
 };
 
 #ifndef RELEASE
 struct Stack {
-    unsigned long long right_canary = right_canary;
+    CanaryType left_canary;
+    bool isStackCtor;
+    bool isStackDtor;
     const char* stk_name;
     const char* birth_function;
     size_t birth_line;              // add isStackCtor and isStackDtor
@@ -45,7 +54,8 @@ struct Stack {
     size_t Size;
     Elemt* data;
     size_t Capacity;
-    unsigned long long left_canary = left_canary;
+    CanaryType right_canary;
+    HashType GNUStkHash;
 };
 #else
 struct Stack {
@@ -68,5 +78,9 @@ error StackOK(const Stack* stk, const size_t line,
               const char* namefile, const char* func);
 error StackDump(Stack* stk, const size_t nline,
                 const char* namefile, const char* func);
+
+error CheckCanary(Stack* stk);
+error AddHash(Stack* stk);
+error AddCanary(Stack* stk);
 
 #endif
