@@ -93,6 +93,8 @@ error StackPush (Stack* stk, Elemt value)
 
     stk->data[stk->Size++] = value;
 
+    ChangeHash(stk);
+
     if(STACKOK(stk) == ERROR)
         return STACK_DUMP(stk);
 
@@ -143,13 +145,15 @@ error StackPop (Stack* stk, Elemt* refValue)
     *refValue = stk->data[--stk->Size];
     stk->data[stk->Size] = 0;
 
+    ChangeHash(stk);
+
     if(STACKOK(stk))
         return STACK_DUMP(stk);
 
     return OK;
 }
 
-error StackDtor (Stack* stk)  // double free>?
+error StackDtor (Stack* stk)
 {
     if (stk == NULL)
     {
@@ -187,8 +191,9 @@ error StackDtor (Stack* stk)  // double free>?
     stk->Capacity = 0;
 
 
-    free(stk->data);
+    free((char*)stk->data-sizeof(CanaryType));
     stk->data = 0;
+    stk->StkHash = 0;
 
     stk->isStackDtor = 1;
     stk = 0;
@@ -345,9 +350,9 @@ HashType AddHash(Stack* stk)
 
     size_t Hash = 5381;
 
-    for(size_t i = 0; i < BytesInStactStk; ++i)
+    for (size_t i = 0; i < (sizeof(*stk) - sizeof(HashType)); ++i)
     {
-        Hash = ((Hash << 5) + Hash) + *((char*)stk->data - sizeof(CanaryType)+i);
+        Hash = ((Hash << 5) + Hash) + ((char*)stk)[i];
     }
     stk->StkHash = Hash;
 
@@ -362,7 +367,9 @@ error CheckHash(Stack* stk)
         return NULLSTRSTK;
     }
 
-    if (stk->StkHash != AddHash(stk))
+    HashType PreviousHash = stk->StkHash;
+
+    if (PreviousHash != AddHash(stk))
     {
         printf("ERROR: DDOS ATTACK on %s!!!! MEOW\n", stk->stk_name);
         exit(INCHASH);
