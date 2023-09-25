@@ -7,9 +7,11 @@
     #define STACK_DUMP(stk) ERROR
     #define CheckCanary(stk) OK
     #define AddCanary(stk)
-    #define AddHash(stk)
+    #define AddHashStk(stk)
+    #define AddHashData(stk)
     #define ChechHash(stk)  OK
-    #define ChangeHash(stk)
+    #define ChangeHashStk(stk)
+    #define ChangeHashData(stk)
 #endif
 
 #define STACK_CTOR(stk, capacity) StackCtor((stk), (capacity), #stk, \
@@ -41,7 +43,8 @@ enum error {
     STACKNOTCTOR = 11,
     STACKDTOR = 12,
     ATTACKCANARY = 13,
-    INCHASH = 14,
+    INCHASHSTACK = 14,
+    INCHASHDATA = 15,
     ERROR = -1,
     OK = 0
 };
@@ -89,9 +92,11 @@ error StackDump(Stack* stk, const size_t nline,
 
 error CheckHash(Stack* stk);
 error CheckCanary(Stack* stk);
-HashType AddHash(Stack* stk);
+HashType AddHashStk(Stack* stk);
+HashType AddHashData(Stack* stk);
 error AddCanary(Stack* stk);
-error ChangeHash(Stack* stk);
+error ChangeHashStk(Stack* stk);
+error ChangeHashData(Stack* stk);
 #endif
 
 #endif

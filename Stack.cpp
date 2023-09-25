@@ -29,12 +29,14 @@ error StackCtor(Stack* stk, const size_t Capacity, const char* name,
 
     stk->Size = 0;
     stk->Capacity = Capacity;
-    stk->data = (Elemt*) (calloc(2*sizeof(CanaryType)+Capacity*sizeof(Elemt), sizeof(char))
+    stk->data = (Elemt*) (calloc(2*sizeof(CanaryType)+Capacity*sizeof(Elemt)+sizeof(HashType)
+                                , sizeof(char))
                           +sizeof(CanaryType));
 
     AddCanary(stk);
 
-    AddHash(stk);
+    AddHashStk(stk);
+    AddHashData(stk);
 
     if (!stk->data)
     {
@@ -57,13 +59,13 @@ error StackPush (Stack* stk, Elemt value)
         return NULLSTRSTK;
     }
 
+    CheckHash(stk);
+
     if (CheckCanary(stk) == ATTACKCANARY)
     {
         STACK_DUMP(stk);
         return ATTACKCANARY;
     }
-
-    CheckHash(stk);
 
     if (!stk->isStackCtor)
     {
@@ -78,7 +80,7 @@ error StackPush (Stack* stk, Elemt value)
     {
         stk->Capacity *= 2;
         stk->data = (Elemt*) (realloc((char*) stk->data - sizeof(CanaryType),
-                    stk->Capacity*sizeof(Elemt)+2*sizeof(CanaryType))+sizeof(CanaryType));
+        sizeof(HashType)+stk->Capacity*sizeof(Elemt)+2*sizeof(CanaryType))+sizeof(CanaryType));
 
 
         if (stk->data == NULL)
@@ -96,7 +98,9 @@ error StackPush (Stack* stk, Elemt value)
 
     stk->data[stk->Size++] = value;
 
-    ChangeHash(stk);
+    ChangeHashStk(stk);
+    ChangeHashData(stk);
+
 
     if(STACKOK(stk) == ERROR)
         return STACK_DUMP(stk);
@@ -112,13 +116,13 @@ error StackPop (Stack* stk, Elemt* refValue)
         return NULLSTRSTK;
     }
 
+    CheckHash(stk);
+
     if (CheckCanary(stk) == ATTACKCANARY)
     {
         STACK_DUMP(stk);
         return ATTACKCANARY;
     }
-
-    CheckHash(stk);
 
     if (!stk->isStackCtor)
     {
@@ -138,7 +142,7 @@ error StackPop (Stack* stk, Elemt* refValue)
 
     if (stk->Size == 0)
     {
-        printf("ERROR: StackPop: ERROR: Stack(%s) Size == 0\n", stk->stk_name);
+        printf("ERROR: StackPop: Stack(%s) Size == 0\n", stk->stk_name);
         return SIZEEQUALZERO;
     }
 
@@ -146,7 +150,7 @@ error StackPop (Stack* stk, Elemt* refValue)
     {
         stk->Capacity /= 2;
         stk->data = (Elemt*) (realloc((char*) stk->data - sizeof(CanaryType),
-                    stk->Capacity*sizeof(Elemt)+2*sizeof(CanaryType))+sizeof(CanaryType));
+        sizeof(HashType)+stk->Capacity*sizeof(Elemt)+2*sizeof(CanaryType))+sizeof(CanaryType));
         AddCanary(stk);
     }
 
@@ -154,7 +158,9 @@ error StackPop (Stack* stk, Elemt* refValue)
     *refValue = stk->data[--stk->Size];
     stk->data[stk->Size] = 0;
 
-    ChangeHash(stk);
+    ChangeHashStk(stk);
+    ChangeHashData(stk);
+
 
     if(STACKOK(stk))
         return STACK_DUMP(stk);
@@ -170,13 +176,13 @@ error StackDtor (Stack* stk)
         return NULLSTRSTK;
     }
 
+    CheckHash(stk);
+
     if (CheckCanary(stk) == ATTACKCANARY)
     {
         STACK_DUMP(stk);
         return ATTACKCANARY;
     }
-
-    CheckHash(stk);
 
     if (!stk->isStackCtor)
     {
@@ -354,7 +360,7 @@ error CheckCanary(Stack* stk)
     return OK;
 }
 
-HashType AddHash(Stack* stk)
+HashType AddHashStk(Stack* stk)
 {
     if (stk == NULL)
     {
@@ -373,6 +379,25 @@ HashType AddHash(Stack* stk)
     return Hash;
 }
 
+HashType AddHashData(Stack* stk)
+{
+    if (stk == NULL)
+    {
+       printf("ERROR: AddHash: Stack == NULL\n");
+        return NULLSTRSTK;
+    }
+
+    size_t Hash = 5381;
+
+    for (size_t i = 0; i < (2*sizeof(CanaryType) + stk->Capacity*sizeof(Elemt)); ++i)
+    {
+        Hash = ((Hash << 5) + Hash) + ((char*)stk->data-sizeof(CanaryType))[i];
+    }
+    *(HashType*)((char*)stk->data+sizeof(Elemt)*stk->Capacity+sizeof(CanaryType)) = Hash;
+
+    return Hash;
+}
+
 error CheckHash(Stack* stk)
 {
     if (stk == NULL)
@@ -381,18 +406,27 @@ error CheckHash(Stack* stk)
         return NULLSTRSTK;
     }
 
-    HashType PreviousHash = stk->StkHash;
+    HashType PreviousHashStk = stk->StkHash;
+    HashType PreviousHashData = *(HashType*)((char*)stk->data+
+                                sizeof(Elemt)*stk->Capacity+sizeof(CanaryType));
 
-    if (PreviousHash != AddHash(stk))
+    if (PreviousHashStk != AddHashStk(stk))
     {
         printf("ERROR: DDOS ATTACK on %s!!!! MEOW\n", stk->stk_name);
-        exit(INCHASH);
+        exit(INCHASHSTACK);
+    }
+
+    if (PreviousHashData != AddHashData(stk))
+    {
+        printf("%0x\n %0x\n", PreviousHashData, AddHashData(stk));
+        printf("ERROR: DDOS ATTACK on %s DATA!!!! MEOW\n", stk->stk_name);
+        exit(INCHASHDATA);
     }
 
     return OK;
 }
 
-error ChangeHash(Stack* stk)
+error ChangeHashStk(Stack* stk)
 {
     if (stk == NULL)
     {
@@ -400,7 +434,20 @@ error ChangeHash(Stack* stk)
         return NULLSTRSTK;
     }
 
-    stk->StkHash = AddHash(stk);
+    stk->StkHash = AddHashStk(stk);
+    return OK;
+}
+
+error ChangeHashData(Stack* stk)
+{
+    if (stk == NULL)
+    {
+        printf("ERROR: ChangeHash: Stack == NULL\n");
+        return NULLSTRSTK;
+    }
+
+    *(HashType*)((char*)stk->data+sizeof(Elemt)*stk->Capacity+
+                        sizeof(CanaryType)) = AddHashData(stk);
     return OK;
 }
 #endif
