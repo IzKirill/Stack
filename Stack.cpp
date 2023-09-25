@@ -20,8 +20,6 @@ error StackCtor(Stack* stk, const size_t Capacity, const char* name,
         return INCORRECTCAPACITY;
     }
 
-    AddCanary(stk);
-
     stk->isStackCtor = 1;
 
     stk->stk_name = name;
@@ -33,8 +31,8 @@ error StackCtor(Stack* stk, const size_t Capacity, const char* name,
     stk->Capacity = Capacity;
     stk->data = (Elemt*) (calloc(2*sizeof(CanaryType)+Capacity*sizeof(Elemt), sizeof(char))
                           +sizeof(CanaryType));
-    ((CanaryType*) stk->data)[-1] = left_canary;
-    *(CanaryType*) ((stk->data)+stk->Capacity*sizeof(Elemt)) = right_canary;
+
+    AddCanary(stk);
 
     AddHash(stk);
 
@@ -65,6 +63,8 @@ error StackPush (Stack* stk, Elemt value)
         return ATTACKCANARY;
     }
 
+    CheckHash(stk);
+
     if (!stk->isStackCtor)
     {
         printf("ERROR: StackPush: Stack does not created. Use funcion StackCtor first.\n");
@@ -77,15 +77,18 @@ error StackPush (Stack* stk, Elemt value)
     if (stk->Size == stk->Capacity)
     {
         stk->Capacity *= 2;
-        stk->data = (Elemt*) realloc(stk->data - sizeof(CanaryType),
-                                  stk->Capacity*sizeof(Elemt)+2*sizeof(CanaryType));
+        stk->data = (Elemt*) (realloc((char*) stk->data - sizeof(CanaryType),
+                    stk->Capacity*sizeof(Elemt)+2*sizeof(CanaryType))+sizeof(CanaryType));
 
-        if (!stk->data)
+
+        if (stk->data == NULL)
         {
             printf("ERROR: StackPush: Stack(%s) Allocation failure.\n",
                     stk->stk_name);
             return NODINMEMORY;
         }
+
+        AddCanary(stk);
 
         for (size_t nelemnt = stk->Size; nelemnt < stk->Capacity; nelemnt++)
             stk->data[nelemnt] = 0;
@@ -115,13 +118,15 @@ error StackPop (Stack* stk, Elemt* refValue)
         return ATTACKCANARY;
     }
 
+    CheckHash(stk);
+
     if (!stk->isStackCtor)
     {
         printf("ERROR: StackPop: Stack does not created. Use funcion StackCtor first.\n");
         return STACKNOTCTOR;
     }
 
-    if(STACKOK(stk) == ERROR)
+    if (STACKOK(stk) == ERROR)
         return STACK_DUMP(stk);
 
     if (refValue == NULL)
@@ -140,7 +145,11 @@ error StackPop (Stack* stk, Elemt* refValue)
     if (2*stk->Size <= stk->Capacity)
     {
         stk->Capacity /= 2;
+        stk->data = (Elemt*) (realloc((char*) stk->data - sizeof(CanaryType),
+                    stk->Capacity*sizeof(Elemt)+2*sizeof(CanaryType))+sizeof(CanaryType));
+        AddCanary(stk);
     }
+
 
     *refValue = stk->data[--stk->Size];
     stk->data[stk->Size] = 0;
@@ -166,6 +175,8 @@ error StackDtor (Stack* stk)
         STACK_DUMP(stk);
         return ATTACKCANARY;
     }
+
+    CheckHash(stk);
 
     if (!stk->isStackCtor)
     {
@@ -302,6 +313,9 @@ error AddCanary(Stack* stk)
     stk->left_canary = left_canary;
     stk->right_canary = right_canary;
 
+     *(CanaryType*)((char*) stk->data - sizeof(CanaryType)) = left_canary;
+    *(CanaryType*) (stk->data+stk->Capacity) = right_canary;
+
     return OK;
 }
 
@@ -324,12 +338,12 @@ error CheckCanary(Stack* stk)
     }
 
     if (((CanaryType*)stk->data)[-1] != left_canary ||
-       *(CanaryType*) ((stk->data)+stk->Capacity*sizeof(Elemt)) != right_canary)
+       *(CanaryType*) (stk->data+stk->Capacity) != right_canary)
     {
         nattacks++;
         printf("Attack on Stack(%s) Data massive canary!! Canary left = %0x ",
                                   stk->stk_name,((CanaryType*)stk->data)[-1]);
-        printf("right = %0x\n",  *(CanaryType*) ((stk->data)+stk->Capacity*sizeof(Elemt)));
+        printf("right = %0x\n",  *(CanaryType*) (stk->data+stk->Capacity));
     }
 
     if (nattacks != 0)
