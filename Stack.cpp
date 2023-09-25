@@ -59,18 +59,18 @@ error StackPush (Stack* stk, Elemt value)
         return NULLSTRSTK;
     }
 
+    if (!stk->isStackCtor)
+    {
+        printf("ERROR: StackPush: Stack does not created. Use funcion StackCtor first.\n");
+        return STACKNOTCTOR;
+    }
+
     CheckHash(stk);
 
     if (CheckCanary(stk) == ATTACKCANARY)
     {
         STACK_DUMP(stk);
         return ATTACKCANARY;
-    }
-
-    if (!stk->isStackCtor)
-    {
-        printf("ERROR: StackPush: Stack does not created. Use funcion StackCtor first.\n");
-        return STACKNOTCTOR;
     }
 
     if (STACKOK(stk) == ERROR)
@@ -116,18 +116,18 @@ error StackPop (Stack* stk, Elemt* refValue)
         return NULLSTRSTK;
     }
 
+    if (!stk->isStackCtor)
+    {
+        printf("ERROR: StackPush: Stack does not created. Use funcion StackCtor first.\n");
+        return STACKNOTCTOR;
+    }
+
     CheckHash(stk);
 
     if (CheckCanary(stk) == ATTACKCANARY)
     {
         STACK_DUMP(stk);
         return ATTACKCANARY;
-    }
-
-    if (!stk->isStackCtor)
-    {
-        printf("ERROR: StackPop: Stack does not created. Use funcion StackCtor first.\n");
-        return STACKNOTCTOR;
     }
 
     if (STACKOK(stk) == ERROR)
@@ -176,17 +176,9 @@ error StackDtor (Stack* stk)
         return NULLSTRSTK;
     }
 
-    CheckHash(stk);
-
-    if (CheckCanary(stk) == ATTACKCANARY)
-    {
-        STACK_DUMP(stk);
-        return ATTACKCANARY;
-    }
-
     if (!stk->isStackCtor)
     {
-        printf("ERROR: StackDtor: Stack does not created. Use funcion StackCtor first.\n");
+        printf("ERROR: StackPush: Stack does not created. Use funcion StackCtor first.\n");
         return STACKNOTCTOR;
     }
 
@@ -194,6 +186,14 @@ error StackDtor (Stack* stk)
     {
         printf("ERROR: StackDtor: Stack(%s) is already deleted.\n", stk->stk_name);
         return STACKDTOR;
+    }
+
+    CheckHash(stk);
+
+    if (CheckCanary(stk) == ATTACKCANARY)
+    {
+        STACK_DUMP(stk);
+        return ATTACKCANARY;
     }
 
     if(STACKOK(stk) == ERROR)
