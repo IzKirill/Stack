@@ -5,17 +5,6 @@
 #include <stdint.h>
 #include "Stack.h"
 
-int main ()
-{
-    Stack stk1 = {};
-
-    STACK_CTOR(&stk1, 10);
-    StackPush(&stk1, 2);
-    STACK_DUMP(&stk1);
-
-    StackDtor(&stk1);
-}
-
 error StackCtor(Stack* stk, const size_t Capacity, const char* name,
                 const size_t birth_line, const char* birth_file, const char* birth_function)
 {
@@ -27,7 +16,7 @@ error StackCtor(Stack* stk, const size_t Capacity, const char* name,
 
     if (Capacity <= 0)
     {
-        printf("ERROR: StackCtor: Incorrect value of Capacity - %d.\n", Capacity);
+        printf("ERROR: StackCtor: Stack Incorrect value of Capacity - %d.\n", Capacity);
         return INCORRECTCAPACITY;
     }
 
@@ -47,9 +36,12 @@ error StackCtor(Stack* stk, const size_t Capacity, const char* name,
     ((CanaryType*) stk->data)[-1] = left_canary;
     *(CanaryType*) ((stk->data)+stk->Capacity*sizeof(Elemt)) = right_canary;
 
+    AddHash(stk);
+
     if (!stk->data)
     {
-        printf("ERROR: StackCtor: Allocation failure.\n");
+        printf("ERROR: StackCtor: Stack(%s) Allocation failure.\n",
+                stk->stk_name);
         return NODINMEMORY;
     }
 
@@ -61,6 +53,12 @@ error StackCtor(Stack* stk, const size_t Capacity, const char* name,
 
 error StackPush (Stack* stk, Elemt value)
 {
+    if (stk == NULL)
+    {
+        printf("ERROR: StackPush: Stack == NULL\n");
+        return NULLSTRSTK;
+    }
+
     if (CheckCanary(stk) == ATTACKCANARY)
     {
         STACK_DUMP(stk);
@@ -69,7 +67,7 @@ error StackPush (Stack* stk, Elemt value)
 
     if (!stk->isStackCtor)
     {
-        printf("ERROR: Stack does not created. Use funcion StackCtor first.\n");
+        printf("ERROR: StackPush: Stack does not created. Use funcion StackCtor first.\n");
         return STACKNOTCTOR;
     }
 
@@ -84,7 +82,8 @@ error StackPush (Stack* stk, Elemt value)
 
         if (!stk->data)
         {
-            printf("ERROR: StackPush: Allocation failure.\n");
+            printf("ERROR: StackPush: Stack(%s) Allocation failure.\n",
+                    stk->stk_name);
             return NODINMEMORY;
         }
 
@@ -102,6 +101,12 @@ error StackPush (Stack* stk, Elemt value)
 
 error StackPop (Stack* stk, Elemt* refValue)
 {
+    if (stk == NULL)
+    {
+        printf("ERROR: StackPop: Stack == NULL\n");
+        return NULLSTRSTK;
+    }
+
     if (CheckCanary(stk) == ATTACKCANARY)
     {
         STACK_DUMP(stk);
@@ -110,7 +115,7 @@ error StackPop (Stack* stk, Elemt* refValue)
 
     if (!stk->isStackCtor)
     {
-        printf("ERROR: Stack does not created. Use funcion StackCtor first.\n");
+        printf("ERROR: StackPop: Stack does not created. Use funcion StackCtor first.\n");
         return STACKNOTCTOR;
     }
 
@@ -119,13 +124,14 @@ error StackPop (Stack* stk, Elemt* refValue)
 
     if (refValue == NULL)
     {
-        printf("ERROR: StackPop: Incorrect adress of refValue == NULL");
+        printf("ERROR: StackPop: Stack(%s) Incorrect adress of refValue == NULL",
+                stk->stk_name);
         return ADRESSNULL;
     }
 
     if (stk->Size == 0)
     {
-        printf("ERROR: StackPop: ERROR: stk->Size == 0\n");
+        printf("ERROR: StackPop: ERROR: Stack(%s) Size == 0\n", stk->stk_name);
         return SIZEEQUALZERO;
     }
 
@@ -145,6 +151,12 @@ error StackPop (Stack* stk, Elemt* refValue)
 
 error StackDtor (Stack* stk)  // double free>?
 {
+    if (stk == NULL)
+    {
+        printf("ERROR: StackDtor: Stack == NULL\n");
+        return NULLSTRSTK;
+    }
+
     if (CheckCanary(stk) == ATTACKCANARY)
     {
         STACK_DUMP(stk);
@@ -153,13 +165,13 @@ error StackDtor (Stack* stk)  // double free>?
 
     if (!stk->isStackCtor)
     {
-        printf("ERROR: Stack does not created. Use funcion StackCtor first.\n");
+        printf("ERROR: StackDtor: Stack does not created. Use funcion StackCtor first.\n");
         return STACKNOTCTOR;
     }
 
     if (stk->isStackDtor)
     {
-        printf("ERROR: Stack is already deleted.\n");
+        printf("ERROR: StackDtor: Stack(%s) is already deleted.\n", stk->stk_name);
         return STACKDTOR;
     }
 
@@ -192,36 +204,43 @@ error StackOK(const Stack* stk, const size_t line,
     if (stk == nullptr)
     {
         printf("%s:%d: error in function %s: "
-               "Stack pointer equal zero.\n", namefile, line, func);
+               "Stack pointer equal zero.\n", namefile, line,
+                                             func);
         n_error++;
+        return ERROR;
     }
     if (stk->Size < 0)
     {
         printf("%s:%d: error in function %s: "
-               "Stack size less zero and equal %d\n", namefile, line, func, stk->Size);
+               "Stack(%s) size less zero and equal %d\n", namefile, line,
+                                      func, stk->stk_name, stk->Size);
         n_error++;
     }
     if (stk->Capacity < 0)
     {
         printf("%s:%d: error in function %s: "
-               "Stack capacity less zero and equal %d\n", namefile, line, func, stk->Capacity);
+               "Stack(%s) capacity less zero and equal %d\n", namefile, line,
+                                      func, stk->stk_name, stk->Capacity);
         n_error++;
     }
     if (stk->Capacity < stk->Size)
     {
-        printf("%s:%d: error in function %s: Stack capacity less stack size: "
-                "capacity = %d, size = %d\n", namefile, line, func , stk->Capacity, stk->Size);
+        printf("%s:%d: error in function %s: Stack(%s) capacity less stack size: "
+                "capacity = %d, size = %d\n", namefile, line, func, stk->stk_name,
+                                            stk->Capacity, stk->Size);
         n_error++;
     }
     if (stk-> Capacity == 0)
     {
         printf("%s:%d: error in function %s: "
-               "Stack capacity equal zero.\n", namefile, line, func);
+               "Stack(%s) capacity equal zero.\n", namefile, line,
+                                                func, stk->stk_name);
     }
     if (stk->data == NULL)
     {
         printf("%s:%d: error in function %s: "
-               "In the stack adress of massive equal zero.\n", namefile, line, func);
+               "In the stack(%s) adress of massive equal zero.\n", namefile, line,
+                                                                func, stk->stk_name);
         n_error++;
     }
 
@@ -234,9 +253,16 @@ error StackOK(const Stack* stk, const size_t line,
     return OK;
 }
 
+#ifndef RELEASE
 error StackDump (Stack* stk, const size_t nline, const char* namefile, const char* func)
 {   // -> to file
     // 100 % garanty
+    if (stk == NULL)
+    {
+        printf("ERROR: Stack == NULL\n");
+        return NULLSTRSTK;
+    }
+
     printf("Stack[%p] %s from %s(%d) %s", stk, stk->stk_name, stk->birth_file,
                                           stk->birth_line, stk->birth_function);
     printf(" called from %s(%d) %s\n", namefile, nline, func);
@@ -264,7 +290,7 @@ error AddCanary(Stack* stk)
 {
     if (stk == NULL)
     {
-        printf("ERROR: Stack == NULL\n");
+        printf("ERROR: AddCanary: Stack == NULL\n");
         return NULLSTRSTK;
     }
 
@@ -278,7 +304,7 @@ error CheckCanary(Stack* stk)
 {
     if (stk == NULL)
     {
-        printf("ERROR: Stack == NULL\n");
+        printf("ERROR: CheckCanary: Stack == NULL\n");
         return NULLSTRSTK;
     }
 
@@ -287,7 +313,8 @@ error CheckCanary(Stack* stk)
     if (stk->left_canary != left_canary || stk->right_canary != right_canary)
     {
         nattacks++;
-        printf("Attack on Stack canary!! Canary left = %0x ", stk->left_canary);
+        printf("Attack on Stack(%s) canary!! Canary left = %0x ",
+                                stk->stk_name, stk->left_canary);
         printf("right = %0x\n", stk->right_canary);
     }
 
@@ -295,7 +322,8 @@ error CheckCanary(Stack* stk)
        *(CanaryType*) ((stk->data)+stk->Capacity*sizeof(Elemt)) != right_canary)
     {
         nattacks++;
-        printf("Attack on StackData massive canary!! Canary left = %0x ", ((CanaryType*)stk->data)[-1]);
+        printf("Attack on Stack(%s) Data massive canary!! Canary left = %0x ",
+                                  stk->stk_name,((CanaryType*)stk->data)[-1]);
         printf("right = %0x\n",  *(CanaryType*) ((stk->data)+stk->Capacity*sizeof(Elemt)));
     }
 
@@ -307,12 +335,51 @@ error CheckCanary(Stack* stk)
     return OK;
 }
 
-error AddHash(Stack* stk)
+HashType AddHash(Stack* stk)
 {
-     uint_fast32_t h = 5381;
+    if (stk == NULL)
+    {
+       printf("ERROR: AddHash: Stack == NULL\n");
+        return NULLSTRSTK;
+    }
 
-        for (unsigned long long i = 0; i < 2*sizeof(CanaryType)+stk->Capacity*sizeof(Elemt); i++)
-                h = h  * 33 + *(stk->data-sizeof(CanaryType)+i);
+    size_t Hash = 5381;
 
-    stk->GNUStkHash = h & 0xffffffff;
+    for(size_t i = 0; i < BytesInStactStk; ++i)
+    {
+        Hash = ((Hash << 5) + Hash) + *((char*)stk->data - sizeof(CanaryType)+i);
+    }
+    stk->StkHash = Hash;
+
+    return Hash;
 }
+
+error CheckHash(Stack* stk)
+{
+    if (stk == NULL)
+    {
+        printf("ERROR: CheckHash: Stack == NULL\n");
+        return NULLSTRSTK;
+    }
+
+    if (stk->StkHash != AddHash(stk))
+    {
+        printf("ERROR: DDOS ATTACK on %s!!!! MEOW\n", stk->stk_name);
+        exit(INCHASH);
+    }
+
+    return OK;
+}
+
+error ChangeHash(Stack* stk)
+{
+    if (stk == NULL)
+    {
+        printf("ERROR: ChangeHash: Stack == NULL\n");
+        return NULLSTRSTK;
+    }
+
+    stk->StkHash = AddHash(stk);
+    return OK;
+}
+#endif
