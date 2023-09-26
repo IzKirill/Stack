@@ -212,7 +212,7 @@ error StackDtor (Stack* stk)
     stk->data = 0;
     stk->StkHash = 0;
 
-    stk->isStackDtor = 1;
+    stk->isStackDtor = 0;
     stk = 0;
 
     return OK;
@@ -412,7 +412,6 @@ error CheckHash(Stack* stk)
 
     if (PreviousHashStk != AddHashStk(stk))
     {
-        printf("%0x\n %0x\n", PreviousHashStk, AddHashStk(stk));
         printf("ERROR: DDOS ATTACK on %s!!!! MEOW\n", stk->stk_name);
         exit(INCHASHSTACK);
     }
