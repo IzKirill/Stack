@@ -5,6 +5,21 @@
 #include <stdint.h>
 #include "Stack.h"
 
+static error StackOK(const Stack* stk, const size_t line,
+              const char* namefile, const char* func);
+#ifndef RELEASE
+static error StackDump(Stack* stk, const size_t nline,
+                const char* namefile, const char* func);
+
+static error CheckHash(Stack* stk);
+static error CheckCanary(Stack* stk);
+static HashType AddHashStk(Stack* stk);
+static HashType AddHashData(Stack* stk);
+static error AddCanary(Stack* stk);
+static error ChangeHashStk(Stack* stk);
+static error ChangeHashData(Stack* stk);
+#endif
+
 error StackCtor(Stack* stk, const size_t Capacity, const char* name,
                 const size_t birth_line, const char* birth_file, const char* birth_function)
 {
@@ -218,7 +233,7 @@ error StackDtor (Stack* stk)
     return OK;
 }
 
-error StackOK(const Stack* stk, const size_t line,
+static error StackOK(const Stack* stk, const size_t line,
               const char* namefile, const char* func)
 {
     size_t n_error = 0;
@@ -276,7 +291,7 @@ error StackOK(const Stack* stk, const size_t line,
 }
 
 #ifndef RELEASE
-error StackDump (Stack* stk, const size_t nline, const char* namefile, const char* func)
+static error StackDump (Stack* stk, const size_t nline, const char* namefile, const char* func)
 {   // -> to file
     // 100 % garanty
     if (stk == NULL)
@@ -308,7 +323,7 @@ error StackDump (Stack* stk, const size_t nline, const char* namefile, const cha
     return ERROR;
 }
 
-error AddCanary(Stack* stk)
+static error AddCanary(Stack* stk)
 {
     if (stk == NULL)
     {
@@ -325,7 +340,7 @@ error AddCanary(Stack* stk)
     return OK;
 }
 
-error CheckCanary(Stack* stk)
+static error CheckCanary(Stack* stk)
 {
     if (stk == NULL)
     {
@@ -360,7 +375,7 @@ error CheckCanary(Stack* stk)
     return OK;
 }
 
-HashType AddHashStk(Stack* stk)
+static HashType AddHashStk(Stack* stk)
 {
     if (stk == NULL)
     {
@@ -379,7 +394,7 @@ HashType AddHashStk(Stack* stk)
     return Hash;
 }
 
-HashType AddHashData(Stack* stk)
+static HashType AddHashData(Stack* stk)
 {
     if (stk == NULL)
     {
@@ -398,7 +413,7 @@ HashType AddHashData(Stack* stk)
     return Hash;
 }
 
-error CheckHash(Stack* stk)
+static error CheckHash(Stack* stk)
 {
     if (stk == NULL)
     {
@@ -427,7 +442,7 @@ error CheckHash(Stack* stk)
     return OK;
 }
 
-error ChangeHashStk(Stack* stk)
+static error ChangeHashStk(Stack* stk)
 {
     if (stk == NULL)
     {
@@ -439,7 +454,7 @@ error ChangeHashStk(Stack* stk)
     return OK;
 }
 
-error ChangeHashData(Stack* stk)
+static error ChangeHashData(Stack* stk)
 {
     if (stk == NULL)
     {

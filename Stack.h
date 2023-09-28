@@ -83,20 +83,5 @@ error StackCtor(Stack* stk, const size_t Capacity, const char* name,
 error StackDtor(Stack* stk);
 error StackPop(Stack* stk, Elemt* refValue);
 error StackPush(Stack* stk, Elemt value);
-error StackOK(const Stack* stk, const size_t line,
-              const char* namefile, const char* func);
-
-#ifndef RELEASE
-error StackDump(Stack* stk, const size_t nline,
-                const char* namefile, const char* func);
-
-error CheckHash(Stack* stk);
-error CheckCanary(Stack* stk);
-HashType AddHashStk(Stack* stk);
-HashType AddHashData(Stack* stk);
-error AddCanary(Stack* stk);
-error ChangeHashStk(Stack* stk);
-error ChangeHashData(Stack* stk);
-#endif
 
 #endif
