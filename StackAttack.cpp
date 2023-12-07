@@ -8,7 +8,7 @@
 error StackCtor(Stack* stk, const size_t Capacity, const char* name,
                 const size_t birth_line, const char* birth_file, const char* birth_function)
 {
-    if (stk == NULL)
+    if (stk == nullptr)
     {
         printf("ERROR: StackCtor: Incorrect value of adress stack massive == NULL");
         return NULLSTRSTK;
