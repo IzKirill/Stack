@@ -170,7 +170,7 @@ error StackPop (Stack* stk, Elemt* refValue)
 
 error StackDtor (Stack* stk)
 {
-    if (stk == NULL)
+    if (stk == nullptr)
     {
         printf("ERROR: StackDtor: Stack == NULL\n");
         return NULLSTRSTK;
